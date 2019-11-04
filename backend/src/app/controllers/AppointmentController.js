@@ -5,7 +5,8 @@ import pt from 'date-fns/locale/pt';
 import User from '../models/User';
 import * as Yup from 'yup';
 import Notification from '../schemas/Notification';
-import Mail from '../../lib/Mail';
+import Queue from '../../lib/Queue';
+import CancellationMain from '../jobs/CancellationMail';
 
 class AppointmentController {
   async index(req, res) {
@@ -18,7 +19,7 @@ class AppointmentController {
       order: ['date'],
       limit: 20,
       offset: (page - 1) * 20,
-      attributes: ['id', 'date'],
+      attributes: ['id', 'date', 'past', 'cancelable'],
       include: [
         {
           model: User,
@@ -100,7 +101,13 @@ class AppointmentController {
     /**
      * Notify provider
      */
-    const formattedDate = format(hourStart, "'dia' dd 'de' MMMM', às 'H:mm'h'");
+    const formattedDate = format(
+      hourStart,
+      "'dia' dd 'de' MMMM', às 'H:mm'h'",
+      {
+        locale: pt,
+      }
+    );
     const user = await User.findByPk(req.userId);
 
     if (user == provider_id) {
@@ -125,6 +132,11 @@ class AppointmentController {
           as: 'provider',
           attributes: ['name', 'email'],
         },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name'],
+        },
       ],
     });
 
@@ -148,10 +160,8 @@ class AppointmentController {
     appointment.canceled_at = new Date();
     await appointment.save();
 
-    await Mail.sendMail({
-      to: `${appointment.provider.name}<${appointment.provider.email}>`,
-      subject: 'Agendamento Cancelado',
-      text: 'voce tem um novo agendamento cancelado',
+    await Queue.add(CancellationMain.key, {
+      appointment,
     });
 
     return res.json(appointment);

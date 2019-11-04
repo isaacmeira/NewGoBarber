@@ -13,6 +13,7 @@ import ProviderController from './app/controllers/ProvidersController';
 import AppointmentController from './app/controllers/AppointmentController';
 import ScheduleController from './app/controllers/ScheduleController';
 import NotificationController from './app/controllers/NotificationController';
+import AvailableController from './app/controllers/AvailableController';
 
 routes.post('/users', UserController.store);
 routes.post('/sessions', SessionController.store);
@@ -27,5 +28,6 @@ routes.delete('/appointments/:id', AppointmentController.delete);
 routes.get('/providers', ProviderController.index);
 routes.get('/schedules', ScheduleController.index);
 routes.get('/notifications', NotificationController.index);
+routes.get('/providers/providerId/available', AvailableController.index);
 routes.put('/notifications/:id', NotificationController.update);
 module.exports = routes;
